@@ -44,7 +44,7 @@ jobs:
       - name: Install packages
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter pub get
-      -      - name: Fix TFLite JVM compatibility
+      - name: Fix TFLite JVM compatibility
         working-directory: extracted/ata_visualizer_flutter_demo
         run: |
           python3 - <<'PY'
