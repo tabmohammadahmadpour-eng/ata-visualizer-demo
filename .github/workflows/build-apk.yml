@@ -44,12 +44,60 @@ jobs:
       - name: Install packages
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter pub get
-      - name: Fix TFLite JVM compatibility
+      -      - name: Fix TFLite JVM compatibility
+        working-directory: extracted/ata_visualizer_flutter_demo
         run: |
-          TFLITE_GRADLE=$(find "$PUB_CACHE/hosted/pub.dev" -path "*/tflite_flutter-*/android/build.gradle" | head -n 1)
-          test -n "$TFLITE_GRADLE"
-          sed -i 's/JavaVersion.VERSION_11/JavaVersion.VERSION_17/g' "$TFLITE_GRADLE"
-          grep -n "sourceCompatibility\|targetCompatibility" "$TFLITE_GRADLE"
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.parse
+
+          config = json.loads(
+              pathlib.Path(".dart_tool/package_config.json").read_text()
+          )
+
+          pkg = next(
+              p for p in config["packages"]
+              if p["name"] == "tflite_flutter"
+          )
+
+          uri = pkg["rootUri"]
+
+          if uri.startswith("file://"):
+              root = pathlib.Path(
+                  urllib.parse.unquote(
+                      urllib.parse.urlparse(uri).path
+                  )
+              )
+          else:
+              root = (
+                  pathlib.Path(".dart_tool") / uri
+              ).resolve()
+
+          candidates = [
+              root / "android" / "build.gradle",
+              root / "android" / "build.gradle.kts",
+          ]
+
+          target = next(
+              (p for p in candidates if p.exists()),
+              None
+          )
+
+          if target is None:
+              raise SystemExit(
+                  f"TFLite Gradle file not found under {root}"
+              )
+
+          text = target.read_text()
+          text = text.replace(
+              "JavaVersion.VERSION_11",
+              "JavaVersion.VERSION_17"
+          )
+          target.write_text(text)
+
+          print("Patched:", target)
+          PY
       - name: Build APK
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter build apk --debug --dart-define=ATA_DEMO_MODE=true
