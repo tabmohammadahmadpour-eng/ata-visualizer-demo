@@ -36,12 +36,7 @@ jobs:
           mkdir extracted
           unzip -q "ATA_Visualizer_Demo_Upload(1).zip" -d extracted
           test -f extracted/ata_visualizer_flutter_demo/pubspec.yaml
-      - name: Fix TFLite JVM compatibility
-        run: |
-          TFLITE_GRADLE=$(find "$PUB_CACHE/hosted/pub.dev" -path "*/tflite_flutter-*/android/build.gradle" | head -n 1)
-          test -n "$TFLITE_GRADLE"
-          sed -i 's/JavaVersion.VERSION_11/JavaVersion.VERSION_17/g' "$TFLITE_GRADLE"
-          grep -n "sourceCompatibility\|targetCompatibility" "$TFLITE_GRADLE"
+     
       - name: Create Android files
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter create --platforms=android --org ir.atapaint .
@@ -49,7 +44,12 @@ jobs:
       - name: Install packages
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter pub get
-
+      - name: Fix TFLite JVM compatibility
+        run: |
+          TFLITE_GRADLE=$(find "$PUB_CACHE/hosted/pub.dev" -path "*/tflite_flutter-*/android/build.gradle" | head -n 1)
+          test -n "$TFLITE_GRADLE"
+          sed -i 's/JavaVersion.VERSION_11/JavaVersion.VERSION_17/g' "$TFLITE_GRADLE"
+          grep -n "sourceCompatibility\|targetCompatibility" "$TFLITE_GRADLE"
       - name: Build APK
         working-directory: extracted/ata_visualizer_flutter_demo
         run: flutter build apk --debug --dart-define=ATA_DEMO_MODE=true
